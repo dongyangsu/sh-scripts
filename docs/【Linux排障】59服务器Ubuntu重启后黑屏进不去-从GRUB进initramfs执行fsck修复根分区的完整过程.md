@@ -59,9 +59,14 @@ initramfs 阶段输出极少，图形驱动此时也没接管，屏幕基本是�
 break=mount
 ```
 
-> 说明：`break=mount` 是 initramfs-tools 的断点参数，语义是“在 mount 阶段中断，进入交互 shell”。
-> 若该参数无效，可依次尝试 `break=premount` / `break=init`。
-> 注意：**`init=/bin/bash`、`systemd.unit=multi-user.target` 这类参数不会产生 `(initramfs)`** —— 它们只在“根分区能正常挂载”时有意义。
+> **参数依据（initramfs-tools 官方说明）**：`break` 会在指定阶段的 initramfs 镜像中启动一个 shell，可选阶段为
+> `top / modules / premount / mount / mountroot / bottom / init`。
+> 本次使用 **`break=mount`** —— 即在“挂载根文件系统”这一步中断，拿到 `(initramfs)` 交互 shell，随后执行 fsck。
+>
+> 对比说明（同样重要）：
+> - `init=/bin/bash`：要求根分区**能挂载**才有意义，根挂不上时仍会掉到 initramfs，不是本次使用的方式
+> - `systemd.unit=multi-user.target`：只是不启动图形界面走文本多用户，不会产生 `(initramfs)`
+> - `nomodeset`：只影响显卡驱动
 
 改完后按 **`Ctrl+X`**（或 `F10`）启动。
 
@@ -172,4 +177,4 @@ fsck -y /dev/sda2
 ## 八、备注
 
 - 本文依据：① 处理人现场操作记录（GRUB 编辑 `linux` 行追加参数 → 进入 `(initramfs)` → `fsck -y /dev/sda2` → 重启恢复）；② 59 机器现场核实（根分区 `/dev/sda2 ext4`、当前 `Filesystem state: clean`、`gdm` 正常、系统持续运行）。
-- 现场追加的具体参数以 `break=mount` 为准（initramfs-tools 标准断点参数）；若你的记忆里是别的写法，只需替换本文对应位置，后续步骤不变。
+- **现场使用的内核参数：`break=mount`（确定）**。依据 initramfs-tools 的 `break` 机制——它会在 `mount` 阶段启动 initramfs shell，正是后续执行 `fsck -y /dev/sda2` 的环境。
