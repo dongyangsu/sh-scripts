@@ -9,7 +9,7 @@
 |---|---|
 | [124 故障修复记录（2026-10-20）](docs/%E3%80%90Linux%E6%8E%92%E9%9A%9C%E3%80%91124%E6%9C%8D%E5%8A%A1%E5%99%A8SSH%E6%97%A0%E6%B3%95%E7%99%BB%E5%BD%95-%E5%8A%A8%E6%80%81%E5%BA%93%E6%8D%9F%E5%9D%8F%E5%AF%BC%E8%87%B4sshd%E5%B4%A9%E6%BA%83%E7%9A%84%E5%AE%8C%E6%95%B4%E4%BF%AE%E5%A4%8D%E8%BF%87%E7%A8%8B.md) | 主机 SSH 无法登录（动态库损坏）→ apt/polkitd/rsyslog 连锁故障 → 软链接被写成文本文件 → IPv6 DNS 出网 → 全量升级并重启验证。含 18 条踩坑记录与可复现命令 |
 
-| [59 服务器重启后黑屏进不去（2026-10-17）](docs/%E3%80%90Linux%E6%8E%92%E9%9A%9C%E3%80%9159%E6%9C%8D%E5%8A%A1%E5%99%A8Ubuntu%E9%87%8D%E5%90%AF%E5%90%8E%E9%BB%91%E5%B1%8F%E8%BF%9B%E4%B8%8D%E5%8E%BB-%E6%A0%B9%E5%88%86%E5%8C%BA%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E5%BC%82%E5%B8%B8%E8%90%BD%E5%85%A5initramfs%E7%9A%84%E4%BF%AE%E5%A4%8D%E8%BF%87%E7%A8%8B.md) | 实为根分区 `/dev/sda2` 文件系统异常落入 `(initramfs)`：`fsck -y /dev/sda2` 后重启恢复。含验证清单与 7 条经验 |
+| [59 服务器重启后黑屏进不去（2026-10-17）](docs/%E3%80%90Linux%E6%8E%92%E9%9A%9C%E3%80%9159%E6%9C%8D%E5%8A%A1%E5%99%A8Ubuntu%E9%87%8D%E5%90%AF%E5%90%8E%E9%BB%91%E5%B1%8F%E8%BF%9B%E4%B8%8D%E5%8E%BB-%E4%BB%8EGRUB%E8%BF%9Binitramfs%E6%89%A7%E8%A1%8Cfsck%E4%BF%AE%E5%A4%8D%E6%A0%B9%E5%88%86%E5%8C%BA%E7%9A%84%E5%AE%8C%E6%95%B4%E8%BF%87%E7%A8%8B.md) | 实为根分区 `/dev/sda2` 文件系统异常：GRUB 编辑内核行加参数进入 `(initramfs)`，`fsck -y /dev/sda2` 后重启恢复。含参数对照表与处置清单 |
 
 ## 脚本清单
 
