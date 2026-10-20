@@ -202,3 +202,69 @@ sudo reboot
 
 - 本文依据：① 现场操作链接记录（GRUB 编辑模式追加 `systemd.unit=multi-user.target` → `(initramfs)` 执行 `fsck -y /dev/sda2` → `exit` 进 tty → 重启恢复图形界面）；② 59 机器现场核实（根分区 `/dev/sda2 ext4`、当前 `Filesystem state: clean`、`gdm` 正常、系统持续运行）。
 - **确定参数：`systemd.unit=multi-user.target`**，已与现场记录核对一致。
+
+---
+
+## 附录：现场对话记录整理（来源：用户提供的分享链接）
+
+> 原始链接：https://chat.deepseek.com/share/rz29p619qc995c6i4y
+> 以下按对话顺序整理，保留关键原话，去掉与本次故障无关的闲聊内容。
+
+### 1. 起点：确认服务器身份
+
+- 用户先发了一张 HP 服务器 BIOS 蓝色菜单的照片（`System Options`、`Power Management Options` 等）。
+- 结论：这是 **HP ProLiant 的 RBSU（ROM-Based Setup Utility）** 主菜单；右侧信息显示 **内存 32768MB（32GB）**、`Proc 1: Intel`、`Proc 2: Not Present`（只装了一颗 CPU）。
+- 用户随后发了前面板标签照片，确认型号为 **HP ProLiant DL380p Gen8**（2U 机架式，Intel Xeon E5-2600 v1/v2，DDR3 ECC，板载 Matrox 显卡，标配 Smart Array P420i）。
+
+### 2. 需求：选择启动方式
+
+- 在 RBSU 里修改启动顺序：`Standard Boot Order (IPL)` → 调整设备优先级 → `Esc` 返回 → `F10` 保存退出（RBSU 是即时保存）。
+- 临时从 U 盘/光驱启动更快的办法：开机 POST 时连按 **F11**，进一次性启动菜单。
+
+### 3. 故障出现：Ubuntu 桌面版重启后黑屏
+
+用户原话：
+
+> “Ubuntu桌面版原来还有界面，重启后黑屏了”
+> “不可能，它进入了硬盘，进入Ubuntu的选择界面”
+> “还是黑屏，正常启动的Ubuntu和advanced options for Ubuntu，只要回车就是黑屏，编辑加nomodeset也不行”
+> “advanced options for Ubuntu进入就是黑屏，根本没有选项，懂不，不是选择，是根本没选择，你一个黑屏怎么选择，但是编辑模式和grub的命令行模式都能进入”
+> “关键是关机前用的好好的，点了重启后，它就黑屏不显示登录界面了，懂吗”
+
+当时的建议（按优先级）：
+
+1. **`nomodeset`**：GRUB 里按 `e`，在 `linux` 行末加 `nomodeset`，`Ctrl+X` 启动 → **用户反馈无效**
+2. 屏蔽 `mgag200` 驱动：`echo "blacklist mgag200" | sudo tee /etc/modprobe.d/matrox.conf`
+3. 进 recovery mode 重装显示管理器（`gdm3` / `lightdm`）
+4. 用 **iLO 远程控制台**接管画面
+
+### 4. 转折：真实落点是 `(initramfs)` + fsck
+
+用户后续反馈：
+
+> “exit后出现的是命令行界面，是不是删掉编辑模式加的那条就能进了”
+> “我直接控制io进行重启”
+
+对应分析（原文要点）：
+
+> “用户执行了 **`fsck -y /dev/sda2`**。”
+> “用户输入了 `exit`。结果：进入了命令行界面（CLI/tty），而不是图形界面（GUI）。”
+> “用户之前为了排查问题，在 GRUB 编辑模式里添加了参数（例如 **`systemd.unit=multi-user.target`**、`init=/bin/bash`，或者为了强制文本模式而修改了内核启动参数）。”
+> “**fsck 修复成功，文件系统损坏的问题已解决。**”
+> “因为启动参数被修改为进入‘多用户文本模式’（`systemd.unit=multi-user.target`）或类似参数，所以系统成功启动，但跳过了图形界面（GDM），直接停在 tty 命令行（文字界面）。”
+
+### 5. 收尾：重启与注意事项
+
+- GRUB 编辑模式里的参数**只对本次启动有效**，不会写进 `grub.cfg`；直接重启即恢复默认（图形界面）启动。
+- 若用 iLO 重启：优先 **Graceful Shutdown**（正常关机）或 **Cold Boot / Reset**；**避免强制断电/长按电源键**，否则可能再次损坏文件系统。
+- 重启后预期画面：HP 自检 → GRUB（不要再按 `e`）→ 可能短暂 fsck → **图形登录界面**。
+- 备选预案：若仍黑屏，再把 `nomodeset` 永久写入 `/etc/default/grub` 的 `GRUB_CMDLINE_LINUX_DEFAULT` 并 `update-grub`。
+
+### 6. 从这份记录里提取出的确定结论
+
+| 结论 | 依据 |
+|---|---|
+| 故障根因是**根分区 `/dev/sda2` 文件系统损坏**，不是显卡 | 在 `(initramfs)` 里 `fsck -y /dev/sda2` 修复后系统恢复 |
+| 进入命令行用的是 **`systemd.unit=multi-user.target`** | 原文明确写出该参数，并解释“跳过 GDM 停到 tty” |
+| `nomodeset` **无效** | 用户实测 |
+| GRUB 编辑参数**不落盘** | 原文说明仅本次启动有效，重启恢复 |
